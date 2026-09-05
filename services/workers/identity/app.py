@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
-import tempfile
 import uuid
 from pathlib import Path
 
+import trimesh
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
@@ -14,7 +13,7 @@ ROOT = Path(os.getenv("TRIPOSR_ROOT", "/opt/triposr"))
 OUTPUT_ROOT = Path(os.getenv("TRIPOSR_OUTPUT_DIR", "/outputs"))
 OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
 
-app = FastAPI(title="Cineqo TripoSR Identity Worker", version="0.1.0")
+app = FastAPI(title="Cineqo TripoSR Identity Worker", version="0.2.0")
 models: dict[str, dict] = {}
 
 
@@ -25,7 +24,7 @@ class RefineRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"ok": True, "source_exists": ROOT.exists(), "engine": "TripoSR", "license": "MIT"}
+    return {"ok": True, "source_exists": ROOT.exists(), "engine": "TripoSR", "license": "MIT", "glb_preview": True}
 
 
 @app.post("/build")
@@ -49,9 +48,8 @@ async def build(images: list[UploadFile] = File(...)):
         path.write_bytes(await image.read())
         paths.append(str(path))
 
-    # TripoSR supports multiple image paths. They are treated as a batch; the
-    # first result is the initial Cineqo preview while the additional outputs
-    # remain available for consistency comparison in later refinement stages.
+    # TripoSR processes the supplied views as a batch. Cineqo keeps every result
+    # and exposes the first valid reconstruction as the base identity preview.
     cmd = ["python3", "run.py", *paths, "--output-dir", str(out), "--bake-texture"]
     proc = subprocess.run(
         cmd,
@@ -62,13 +60,29 @@ async def build(images: list[UploadFile] = File(...)):
         check=False,
     )
     generated = [str(p) for p in out.rglob("*") if p.is_file() and p.suffix.lower() in {".obj", ".glb", ".gltf", ".ply"}]
+
+    preview: str | None = None
+    if generated:
+        existing_glb = next((p for p in generated if Path(p).suffix.lower() == ".glb"), None)
+        if existing_glb:
+            preview = existing_glb
+        else:
+            try:
+                scene = trimesh.load(generated[0], force="scene")
+                glb_path = work / "preview.glb"
+                glb_path.write_bytes(scene.export(file_type="glb"))
+                preview = str(glb_path)
+                generated.insert(0, preview)
+            except Exception:
+                preview = generated[0]
+
     status = "succeeded" if proc.returncode == 0 and generated else "failed"
     result = {
         "id": model_id,
         "status": status,
         "engine": "TripoSR",
         "files": generated,
-        "preview": generated[0] if generated else None,
+        "preview": preview,
         "stdout": proc.stdout[-8000:],
         "stderr": proc.stderr[-8000:],
         "input_count": len(paths),
@@ -81,9 +95,8 @@ async def build(images: list[UploadFile] = File(...)):
 
 @app.post("/refine")
 def refine(req: RefineRequest):
-    # TripoSR itself is reconstruction, not text-guided mesh editing. Keep the
-    # instruction in the model record so Cineqo can route it to the next
-    # permissively licensed refinement engine without pretending an edit ran.
+    # TripoSR itself is reconstruction, not text-guided mesh editing. Preserve
+    # refinement requests explicitly instead of pretending a mesh edit occurred.
     model_id = req.model_id or (next(reversed(models)) if models else None)
     if not model_id or model_id not in models:
         raise HTTPException(status_code=404, detail="no identity model is available")
@@ -91,7 +104,7 @@ def refine(req: RefineRequest):
     return {
         "model_id": model_id,
         "queued": True,
-        "message": "Refinement request saved. TripoSR provides the base mesh; text-guided mesh refinement is a separate adapter.",
+        "message": "Refinement request saved. TripoSR provides the base reconstruction; arbitrary text-guided geometry editing requires a separate permissive refinement engine.",
     }
 
 
