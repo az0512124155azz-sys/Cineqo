@@ -126,7 +126,7 @@ class Whisper:
 
 @app.cls(
     image=wan_image,
-    gpu="L40S",
+    gpu="A10G",
     timeout=3600,
     scaledown_window=60,
     volumes={MODEL_DIR: MODEL_VOLUME},
@@ -154,10 +154,10 @@ class Wan:
 
         kwargs: dict[str, Any] = {
             "prompt": prompt,
-            "num_frames": 49,
-            "height": 480,
-            "width": 832,
-            "num_inference_steps": 20,
+            "num_frames": 33,
+            "height": 384,
+            "width": 672,
+            "num_inference_steps": 14,
             "guidance_scale": 5.0,
         }
         if image_bytes:
