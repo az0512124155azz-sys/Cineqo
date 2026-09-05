@@ -58,5 +58,6 @@
       "id": "flux1-dev-family",
       "reason": "Non-commercial/custom model-license restrictions on dev-family weights; excluded from the approved set."
     }
-  ]
+  ],
+  "workflow_trigger_revision": 1
 }
