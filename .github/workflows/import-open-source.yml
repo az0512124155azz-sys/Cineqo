@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: cineqo-open-source-import
+  cancel-in-progress: false
+
 jobs:
   import:
     runs-on: ubuntu-latest
@@ -42,4 +46,5 @@ jobs:
             exit 0
           fi
           git commit -m "Import vetted open-source sources"
+          git pull --rebase origin main
           git push origin HEAD:main
