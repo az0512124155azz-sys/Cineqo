@@ -10,9 +10,16 @@ if (-not (Get-Command modal -ErrorAction SilentlyContinue)) {
 $profile = modal profile current
 Write-Host "Active Modal profile: $profile"
 
-$keyBytes = New-Object byte[] 32
-[System.Security.Cryptography.RandomNumberGenerator]::Fill($keyBytes)
-$key = [Convert]::ToHexString($keyBytes).ToLowerInvariant()
+# Generate a 32-byte random API key in a way that works on Windows PowerShell 5.1
+$rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+try {
+    $keyBytes = New-Object byte[] 32
+    $rng.GetBytes($keyBytes)
+}
+finally {
+    $rng.Dispose()
+}
+$key = -join ($keyBytes | ForEach-Object { $_.ToString('x2') })
 
 Write-Host 'Creating/updating Modal secret cineqo-api...'
 modal secret create cineqo-api "CINEQO_MODAL_API_KEY=$key" --force
