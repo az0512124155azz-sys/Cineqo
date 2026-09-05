@@ -1,8 +1,12 @@
 // Cineqo model runtime bridge.
-// app.js owns the UI. This file replaces CREATE-mode sending with the real
-// Director -> Whisper -> Wan -> MuseTalk pipeline while leaving PLAN mode on /api/chat.
+// app.js owns the UI. This file adds the real open-model pipelines:
+// PLAN -> multimodal Director + optional public web research
+// CREATE -> Director -> Whisper -> Wan 2.2 -> optional MuseTalk
+// Onboarding references -> multimodal Director visual analysis
 
 const sleep=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
+window.cineqoStyleProfile='';
+window.cineqoArtistProfile='';
 
 async function pollJson(path,{interval=5000,timeout=2*60*60*1000}={}){
   const started=Date.now();
@@ -26,6 +30,42 @@ function addProgress(title,text){
   return row.querySelector('.model-progress-text');
 }
 
+async function analyzeUploadedReferences(){
+  if(!mine.length&&!refs.length){window.cineqoStyleProfile='';return;}
+  toast(lang==='he'?'Cineqo מנתח את הקליפים והרפרנסים…':'Cineqo is analyzing clips and references…');
+  const fd=new FormData();
+  mine.slice(0,10).forEach(f=>fd.append('mine',f,f.name));
+  refs.slice(0,10).forEach(f=>fd.append('references',f,f.name));
+  fd.append('language',lang);
+  const r=await fetch(api('/api/references/analyze'),{method:'POST',body:fd});
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.detail||`HTTP ${r.status}`);
+  window.cineqoStyleProfile=d.summary||'';
+  if(window.cineqoStyleProfile){
+    conversation.push({role:'system',content:`Artist Visual DNA from uploaded clips and references:\n${window.cineqoStyleProfile}`});
+  }
+  toast(lang==='he'?'ניתוח הסגנון הושלם':'Visual style analysis complete');
+}
+
+// Replace the onboarding step-4 Continue action so uploaded clips are actually
+// analyzed before Digital Identity setup begins.
+const originalNextHandler=$('next').onclick;
+$('next').onclick=async()=>{
+  if(step===4){
+    try{
+      $('next').disabled=true;
+      await analyzeUploadedReferences();
+      step=5;renderStep();
+    }catch(e){
+      toast((lang==='he'?'ניתוח הקליפים נכשל: ':'Clip analysis failed: ')+(e.message||e));
+    }finally{
+      $('next').disabled=false;
+    }
+    return;
+  }
+  return originalNextHandler();
+};
+
 async function createWithModels(){
   const userPrompt=$('prompt').value.trim();
   if(!userPrompt&&!attachments.length) return;
@@ -41,8 +81,12 @@ async function createWithModels(){
   const progress=addProgress('Cineqo / CREATE',lang==='he'?'מכין את הבקשה ומפעיל את המודלים…':'Preparing the request and starting the models…');
 
   try{
+    const styleContext=window.cineqoStyleProfile?`\n\nArtist Visual DNA (use as preferences, never copy references):\n${window.cineqoStyleProfile}`:'';
+    const artistContext=window.cineqoArtistProfile?`\n\nArtist public profile:\n${window.cineqoArtistProfile}`:'';
+    const effectivePrompt=(userPrompt||'Create a cinematic music video from the supplied material.')+artistContext+styleContext;
+
     const fd=new FormData();
-    fd.append('prompt',userPrompt||'Create a cinematic music video from the supplied material.');
+    fd.append('prompt',effectivePrompt);
     fd.append('language',lang);
     fd.append('artist_name',$('artistName').value||'');
     if(song)fd.append('song',song,song.name);
