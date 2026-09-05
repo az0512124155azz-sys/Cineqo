@@ -1,0 +1,8 @@
+{
+  "id": "whisper",
+  "upstream": "https://github.com/openai/whisper.git",
+  "requested_ref": "main",
+  "resolved_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+  "declared_license": "MIT",
+  "license_file": "LICENSE"
+}

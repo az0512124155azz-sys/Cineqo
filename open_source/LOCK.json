@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-05T17:19:35Z",
+  "components": [
+{
+  "id": "wan2.2",
+  "upstream": "https://github.com/Wan-Video/Wan2.2.git",
+  "requested_ref": "main",
+  "resolved_commit": "42bf4cfaa384bc21833865abc2f9e6c0e67233dc",
+  "declared_license": "Apache-2.0",
+  "destination": "third_party/video/Wan2.2"
+}
+,
+{
+  "id": "musetalk",
+  "upstream": "https://github.com/TMElyralab/MuseTalk.git",
+  "requested_ref": "main",
+  "resolved_commit": "0a89dec45a0192b824e3cf4daf96c239440c5ed8",
+  "declared_license": "MIT",
+  "destination": "third_party/lipsync/MuseTalk"
+}
+,
+{
+  "id": "whisper",
+  "upstream": "https://github.com/openai/whisper.git",
+  "requested_ref": "main",
+  "resolved_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
+  "declared_license": "MIT",
+  "destination": "third_party/audio/whisper"
+}
+
+  ]
+}

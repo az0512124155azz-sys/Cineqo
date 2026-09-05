@@ -1,0 +1,8 @@
+{
+  "id": "wan2.2",
+  "upstream": "https://github.com/Wan-Video/Wan2.2.git",
+  "requested_ref": "main",
+  "resolved_commit": "42bf4cfaa384bc21833865abc2f9e6c0e67233dc",
+  "declared_license": "Apache-2.0",
+  "license_file": "LICENSE.txt"
+}

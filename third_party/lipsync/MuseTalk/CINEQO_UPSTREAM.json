@@ -1,0 +1,8 @@
+{
+  "id": "musetalk",
+  "upstream": "https://github.com/TMElyralab/MuseTalk.git",
+  "requested_ref": "main",
+  "resolved_commit": "0a89dec45a0192b824e3cf4daf96c239440c5ed8",
+  "declared_license": "MIT",
+  "license_file": "LICENSE"
+}
