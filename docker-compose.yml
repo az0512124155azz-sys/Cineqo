@@ -20,14 +20,23 @@ services:
       CINEQO_WAN_URL: ${CINEQO_WAN_URL:-http://wan:8012}
       CINEQO_MUSETALK_URL: ${CINEQO_MUSETALK_URL:-http://musetalk:8013}
       CINEQO_IDENTITY_URL: ${CINEQO_IDENTITY_URL:-http://identity:8014}
+      CINEQO_SHARED_ROOT: /shared
       CINEQO_CORS_ORIGINS: ${CINEQO_CORS_ORIGINS:-*}
+      CINEQO_WEB_RESULTS: ${CINEQO_WEB_RESULTS:-8}
+    volumes:
+      - ./runtime/shared:/shared
     ports:
       - "8000:8000"
+    depends_on:
+      - whisper
+      - wan
+      - musetalk
+      - identity
 
   director:
     image: vllm/vllm-openai:latest
     profiles: ["gpu"]
-    command: ["--model", "${CINEQO_DIRECTOR_MODEL:-Qwen/Qwen3-4B}", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["--model", "${CINEQO_DIRECTOR_MODEL:-Qwen/Qwen3-4B}", "--host", "0.0.0.0", "--port", "8000", "--gpu-memory-utilization", "0.22"]
     environment:
       HF_HOME: /models/hf
     volumes:
@@ -52,6 +61,7 @@ services:
       WHISPER_DEVICE: ${WHISPER_DEVICE:-cuda}
     volumes:
       - ./models/whisper-cache:/root/.cache/whisper
+      - ./runtime/shared:/shared
     ports:
       - "8011:8011"
     deploy:
@@ -68,12 +78,13 @@ services:
       dockerfile: services/workers/wan/Dockerfile
     profiles: ["gpu"]
     environment:
-      WAN_CKPT_DIR: ${WAN_CKPT_DIR:-/models/Wan2.2-T2V-A14B}
-      WAN_TASK: ${WAN_TASK:-t2v-A14B}
-      WAN_OUTPUT_DIR: /outputs
+      WAN_CKPT_DIR: ${WAN_CKPT_DIR:-/models/Wan2.2-TI2V-5B}
+      WAN_TASK: ${WAN_TASK:-ti2v-5B}
+      WAN_OUTPUT_DIR: /shared/wan
+      WAN_JOB_TIMEOUT: ${WAN_JOB_TIMEOUT:-7200}
     volumes:
       - ./models/wan:/models
-      - ./runtime/wan:/outputs
+      - ./runtime/shared:/shared
     ports:
       - "8012:8012"
     deploy:
@@ -89,9 +100,12 @@ services:
       context: .
       dockerfile: services/workers/musetalk/Dockerfile
     profiles: ["gpu"]
+    environment:
+      MUSETALK_OUTPUT_DIR: /shared/musetalk
+      MUSETALK_UNET: /models/musetalkV15/unet.pth
+      MUSETALK_UNET_CONFIG: /models/musetalkV15/musetalk.json
     volumes:
       - ./models/musetalk:/models
-      - ./runtime/musetalk:/outputs
       - ./runtime/shared:/shared
     ports:
       - "8013:8013"
@@ -110,10 +124,10 @@ services:
     profiles: ["gpu"]
     environment:
       TRIPOSR_ROOT: /opt/triposr
-      TRIPOSR_OUTPUT_DIR: /outputs
+      TRIPOSR_OUTPUT_DIR: /shared/identity
     volumes:
       - ./models/triposr-cache:/root/.cache/huggingface
-      - ./runtime/identity:/outputs
+      - ./runtime/shared:/shared
     ports:
       - "8014:8014"
     deploy:
