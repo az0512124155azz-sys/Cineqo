@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-05T18:20:56Z",
+  "generated_at": "2026-09-05T18:23:11Z",
   "components": [
 {
   "id": "wan2.2",
@@ -27,6 +27,15 @@
   "resolved_commit": "86098128c0b4f24f0e2aa2994de830614b474227",
   "declared_license": "MIT",
   "destination": "third_party/audio/whisper"
+}
+,
+{
+  "id": "triposr",
+  "upstream": "https://github.com/VAST-AI-Research/TripoSR.git",
+  "requested_ref": "main",
+  "resolved_commit": "107cefdc244c39106fa830359024f6a2f1c78871",
+  "declared_license": "MIT",
+  "destination": "third_party/3d/TripoSR"
 }
 
   ]

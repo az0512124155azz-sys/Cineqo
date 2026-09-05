@@ -1,0 +1,8 @@
+{
+  "id": "triposr",
+  "upstream": "https://github.com/VAST-AI-Research/TripoSR.git",
+  "requested_ref": "main",
+  "resolved_commit": "107cefdc244c39106fa830359024f6a2f1c78871",
+  "declared_license": "MIT",
+  "license_file": "LICENSE"
+}
