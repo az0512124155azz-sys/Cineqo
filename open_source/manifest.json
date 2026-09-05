@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "project": "Cineqo",
+  "policy": {
+    "ai_components_must_be_open_source": true,
+    "preferred_licenses": ["Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause"],
+    "model_weights_committed": false,
+    "reject_custom_restrictive_model_licenses": true
+  },
+  "components": [
+    {
+      "id": "wan2.2",
+      "role": "video-generation",
+      "upstream": "https://github.com/Wan-Video/Wan2.2.git",
+      "ref": "main",
+      "destination": "third_party/video/Wan2.2",
+      "license": "Apache-2.0",
+      "include_in_import": true,
+      "notes": "Source code only. Model weights stay external. Ref will be pinned to an immutable commit by the import workflow before product integration."
+    },
+    {
+      "id": "musetalk",
+      "role": "lip-sync",
+      "upstream": "https://github.com/TMElyralab/MuseTalk.git",
+      "ref": "main",
+      "destination": "third_party/lipsync/MuseTalk",
+      "license": "MIT",
+      "include_in_import": true,
+      "notes": "Source import only. Any model checkpoints remain external and must retain upstream notices."
+    },
+    {
+      "id": "whisper",
+      "role": "speech-transcription",
+      "upstream": "https://github.com/openai/whisper.git",
+      "ref": "main",
+      "destination": "third_party/audio/whisper",
+      "license": "MIT",
+      "include_in_import": true,
+      "notes": "Used for transcription/lyrics timing assistance, not music generation."
+    },
+    {
+      "id": "mistral-small-4",
+      "role": "director-research-planning",
+      "upstream": "https://huggingface.co/mistralai/Mistral-Small-4-119B-2603",
+      "ref": "main",
+      "destination": null,
+      "license": "Apache-2.0",
+      "include_in_import": false,
+      "notes": "Open model candidate. Do not vendor weights into GitHub. Runtime integration comes later."
+    }
+  ],
+  "excluded": [
+    {
+      "id": "hunyuanvideo",
+      "reason": "Custom community model license with territorial restrictions; excluded under Cineqo's strict open-source policy."
+    },
+    {
+      "id": "flux1-dev-family",
+      "reason": "Non-commercial/custom model-license restrictions on dev-family weights; excluded from the approved set."
+    }
+  ]
+}
