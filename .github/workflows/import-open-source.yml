@@ -2,6 +2,12 @@ name: Import vetted open-source sources
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "open_source/manifest.json"
+      - "scripts/import-open-source.sh"
+      - ".github/workflows/import-open-source.yml"
 
 permissions:
   contents: write
