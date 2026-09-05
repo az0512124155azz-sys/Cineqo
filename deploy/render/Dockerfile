@@ -5,6 +5,7 @@ WORKDIR /opt/cineqo
 COPY services/api/requirements.txt /opt/cineqo/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 COPY services/api/app /opt/cineqo/api
+COPY services/api/free_main.py /opt/cineqo/api/free_main.py
 COPY apps/web /usr/share/nginx/html
 COPY deploy/render/nginx.conf /etc/nginx/sites-available/default
 COPY deploy/render/supervisord.conf /etc/supervisor/conf.d/cineqo.conf
