@@ -3,10 +3,20 @@
 // PLAN -> multimodal Director + optional public web research
 // CREATE -> Director -> Whisper -> Wan 2.2 -> optional MuseTalk
 // Onboarding references -> multimodal Director visual analysis
+// Digital Identity -> TripoSR -> real GLB preview
 
 const sleep=(ms)=>new Promise(resolve=>setTimeout(resolve,ms));
 window.cineqoStyleProfile='';
 window.cineqoArtistProfile='';
+window.cineqoIdentityModelId='';
+window.cineqoIdentityPreviewUrl='';
+
+// model-viewer is an Apache-2.0 web component, not an AI model. It is loaded
+// only to display the GLB produced by the self-hosted identity worker.
+const modelViewerScript=document.createElement('script');
+modelViewerScript.type='module';
+modelViewerScript.src='https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+document.head.appendChild(modelViewerScript);
 
 async function pollJson(path,{interval=5000,timeout=2*60*60*1000}={}){
   const started=Date.now();
@@ -47,8 +57,6 @@ async function analyzeUploadedReferences(){
   toast(lang==='he'?'ניתוח הסגנון הושלם':'Visual style analysis complete');
 }
 
-// Replace the onboarding step-4 Continue action so uploaded clips are actually
-// analyzed before Digital Identity setup begins.
 const originalNextHandler=$('next').onclick;
 $('next').onclick=async()=>{
   if(step===4){
@@ -65,6 +73,43 @@ $('next').onclick=async()=>{
   }
   return originalNextHandler();
 };
+
+async function prepareIdentityConnected(){
+  if(photos.length<3)return toast(lang==='he'?'צריך לפחות 3 תמונות ברורות':'At least 3 clear photos are required');
+  $('identityMessage').classList.remove('hidden');
+  $('identityMessage').textContent=lang==='he'?'TripoSR בונה עכשיו את המודל התלת־ממדי…':'TripoSR is building the 3D model…';
+  const fd=new FormData();photos.slice(0,10).forEach(f=>fd.append('images',f,f.name));
+  try{
+    const r=await fetch(api('/api/identity/prepare'),{method:'POST',body:fd});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.detail?JSON.stringify(d.detail):`HTTP ${r.status}`);
+    window.cineqoIdentityModelId=d.id||'';
+    window.cineqoIdentityPreviewUrl=d.preview_url||'';
+    $('identityMessage').textContent=lang==='he'?'המודל נוצר. פותח תצוגת 3D לבדיקה…':'Model created. Opening the 3D review…';
+    if(window.cineqoIdentityPreviewUrl){
+      const host=q('.model-view');
+      host.innerHTML=`<model-viewer id="identityViewer" src="${api(window.cineqoIdentityPreviewUrl)}" camera-controls auto-rotate shadow-intensity="1" style="width:100%;height:100%;min-height:430px;background:transparent"></model-viewer>`;
+    }
+    setTimeout(()=>{step=6;renderStep()},450);
+  }catch(e){
+    $('identityMessage').textContent=(lang==='he'?'יצירת המודל נכשלה: ':'Model generation failed: ')+(e.message||e);
+  }
+}
+$('photosDone').onclick=prepareIdentityConnected;
+
+async function identityRefineConnected(){
+  const input=$('modelPrompt');const instruction=input.value.trim();if(!instruction)return;
+  addModelMessage(instruction,'user');input.value='';modelApproved=false;$('modelStatus').textContent=text('notApproved');
+  try{
+    const r=await fetch(api('/api/identity/refine'),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({instruction,model_id:window.cineqoIdentityModelId||null})});
+    const d=await r.json();if(!r.ok)throw new Error(d.detail||`HTTP ${r.status}`);
+    addModelMessage(d.message||'Request saved.','ai');
+  }catch(e){
+    addModelMessage((lang==='he'?'שגיאת מנוע: ':'Model error: ')+(e.message||e),'ai');
+  }
+}
+$('sendModel').onclick=identityRefineConnected;
+$('modelPrompt').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();identityRefineConnected()}};
 
 async function createWithModels(){
   const userPrompt=$('prompt').value.trim();
@@ -152,7 +197,6 @@ async function showModelStatus(){
   }
 }
 
-// Replace only the send bindings. Everything else remains owned by app.js.
 $('sendButton').onclick=routedSend;
 $('prompt').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();routedSend()}};
 showModelStatus();
