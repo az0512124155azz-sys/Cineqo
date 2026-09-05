@@ -1,0 +1,104 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    environment:
+      CINEQO_DIRECTOR_BASE_URL: ${CINEQO_DIRECTOR_BASE_URL:-http://director:8000/v1}
+      CINEQO_DIRECTOR_MODEL: ${CINEQO_DIRECTOR_MODEL:-Qwen/Qwen3-4B}
+      CINEQO_DIRECTOR_API_KEY: ${CINEQO_DIRECTOR_API_KEY:-local-open-model}
+      CINEQO_WHISPER_URL: ${CINEQO_WHISPER_URL:-http://whisper:8011}
+      CINEQO_WAN_URL: ${CINEQO_WAN_URL:-http://wan:8012}
+      CINEQO_MUSETALK_URL: ${CINEQO_MUSETALK_URL:-http://musetalk:8013}
+      CINEQO_IDENTITY_URL: ${CINEQO_IDENTITY_URL:-}
+      CINEQO_CORS_ORIGINS: ${CINEQO_CORS_ORIGINS:-*}
+    ports:
+      - "8000:8000"
+
+  director:
+    image: vllm/vllm-openai:latest
+    profiles: ["gpu"]
+    command: ["--model", "${CINEQO_DIRECTOR_MODEL:-Qwen/Qwen3-4B}", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      HF_HOME: /models/hf
+    volumes:
+      - ./models/hf:/models/hf
+    ports:
+      - "8001:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  whisper:
+    build:
+      context: .
+      dockerfile: services/workers/whisper/Dockerfile
+    profiles: ["gpu"]
+    environment:
+      WHISPER_MODEL: ${WHISPER_MODEL:-small}
+      WHISPER_DEVICE: ${WHISPER_DEVICE:-cuda}
+    volumes:
+      - ./models/whisper-cache:/root/.cache/whisper
+    ports:
+      - "8011:8011"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  wan:
+    build:
+      context: .
+      dockerfile: services/workers/wan/Dockerfile
+    profiles: ["gpu"]
+    environment:
+      WAN_CKPT_DIR: ${WAN_CKPT_DIR:-/models/Wan2.2-T2V-A14B}
+      WAN_TASK: ${WAN_TASK:-t2v-A14B}
+      WAN_OUTPUT_DIR: /outputs
+    volumes:
+      - ./models/wan:/models
+      - ./runtime/wan:/outputs
+    ports:
+      - "8012:8012"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  musetalk:
+    build:
+      context: .
+      dockerfile: services/workers/musetalk/Dockerfile
+    profiles: ["gpu"]
+    volumes:
+      - ./models/musetalk:/models
+      - ./runtime/musetalk:/outputs
+      - ./runtime/shared:/shared
+    ports:
+      - "8013:8013"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
