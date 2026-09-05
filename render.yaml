@@ -7,11 +7,9 @@ services:
     healthCheckPath: /health
     autoDeploy: true
     envVars:
-      - key: CINEQO_HF_CORE_SPACE
+      - key: CINEQO_MODAL_URL
         sync: false
-      - key: CINEQO_HF_VIDEO_SPACE
-        sync: false
-      - key: CINEQO_HF_TOKEN
+      - key: CINEQO_MODAL_API_KEY
         sync: false
       - key: CINEQO_CORS_ORIGINS
         value: "*"
