@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import subprocess
 import threading
 import uuid
 from pathlib import Path
@@ -22,7 +23,7 @@ WEB_RESULTS = int(os.getenv("CINEQO_WEB_RESULTS", "8"))
 TMP_ROOT = Path(os.getenv("CINEQO_TMP_ROOT", "/tmp/cineqo")).resolve()
 TMP_ROOT.mkdir(parents=True, exist_ok=True)
 
-app = FastAPI(title=APP_NAME, version="0.1.0")
+app = FastAPI(title=APP_NAME, version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[x.strip() for x in os.getenv("CINEQO_CORS_ORIGINS", "*").split(",")],
@@ -111,6 +112,7 @@ async def health() -> dict[str, Any]:
     return {
         "ok": True,
         "service": APP_NAME,
+        "version": "0.2.0",
         "core_space_configured": bool(CORE_SPACE),
         "video_space_configured": bool(VIDEO_SPACE),
     }
@@ -172,19 +174,41 @@ async def transcribe(audio: UploadFile = File(...)) -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=f"Whisper Space unavailable: {exc}") from exc
 
 
-def run_video_job(job_id: str, prompt: str, image_path: str | None) -> None:
+def mux_song(video_path: str, song_path: str, job_id: str) -> str:
+    out = TMP_ROOT / f"cineqo-{job_id}-with-song.mp4"
+    cmd = [
+        "ffmpeg", "-y",
+        "-i", video_path,
+        "-i", song_path,
+        "-map", "0:v:0",
+        "-map", "1:a:0",
+        "-c:v", "copy",
+        "-c:a", "aac",
+        "-b:a", "192k",
+        "-shortest",
+        str(out),
+    ]
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=180, check=False)
+    if proc.returncode != 0 or not out.is_file():
+        raise RuntimeError("FFmpeg audio mux failed: " + proc.stderr[-2000:])
+    return str(out)
+
+
+def run_video_job(job_id: str, prompt: str, image_path: str | None, song_path: str | None) -> None:
     with job_lock:
         video_jobs[job_id]["status"] = "running"
     try:
-        kwargs: dict[str, Any] = {"prompt": prompt}
-        if image_path:
-            kwargs["image"] = handle_file(image_path)
-        else:
-            kwargs["image"] = None
-        result = video_client().predict(**kwargs, api_name="/generate")
+        result = video_client().predict(prompt=prompt, image=handle_file(image_path) if image_path else None, api_name="/generate")
         output_path = str(result)
+        if song_path:
+            output_path = mux_song(output_path, song_path, job_id)
         with job_lock:
-            video_jobs[job_id].update(status="succeeded", files=[output_path], file_urls=[f"/api/free-video/{job_id}"])
+            video_jobs[job_id].update(
+                status="succeeded",
+                files=[output_path],
+                file_urls=[f"/api/free-video/{job_id}"],
+                original_song_embedded=bool(song_path),
+            )
     except Exception as exc:
         with job_lock:
             video_jobs[job_id].update(status="failed", error=str(exc))
@@ -199,13 +223,14 @@ async def create(
     reference_image: UploadFile | None = File(None),
 ) -> dict[str, Any]:
     transcript: dict[str, Any] | None = None
+    song_path: str | None = None
     if song:
-        target = TMP_ROOT / f"song-{uuid.uuid4().hex}{Path(song.filename or 'song.wav').suffix or '.wav'}"
+        song_path = str(TMP_ROOT / f"song-{uuid.uuid4().hex}{Path(song.filename or 'song.wav').suffix or '.wav'}")
         song_bytes = await song.read()
-        target.write_bytes(song_bytes)
+        Path(song_path).write_bytes(song_bytes)
 
         def transcribe_song() -> Any:
-            return core_client().predict(audio=handle_file(str(target)), api_name="/transcribe")
+            return core_client().predict(audio=handle_file(song_path), api_name="/transcribe")
 
         result = await asyncio.to_thread(transcribe_song)
         transcript = result if isinstance(result, dict) else {"text": str(result)}
@@ -227,13 +252,14 @@ async def create(
 
     job_id = uuid.uuid4().hex
     video_jobs[job_id] = {"id": job_id, "status": "queued", "prompt": generation_prompt}
-    threading.Thread(target=run_video_job, args=(job_id, generation_prompt, image_path), daemon=True).start()
+    threading.Thread(target=run_video_job, args=(job_id, generation_prompt, image_path, song_path), daemon=True).start()
     return {
         "run_id": uuid.uuid4().hex,
         "generation_prompt": generation_prompt,
         "transcription": transcript,
         "video_job": video_jobs[job_id],
         "free_mode": True,
+        "song_will_be_embedded": bool(song_path),
     }
 
 
