@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: cineqo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deploy/render/Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: CINEQO_DIRECTOR_BASE_URL
+        sync: false
+      - key: CINEQO_DIRECTOR_MODEL
+        value: Qwen/Qwen3-4B
+      - key: CINEQO_DIRECTOR_API_KEY
+        value: local-open-model
+      - key: CINEQO_WHISPER_URL
+        sync: false
+      - key: CINEQO_WAN_URL
+        sync: false
+      - key: CINEQO_MUSETALK_URL
+        sync: false
+      - key: CINEQO_IDENTITY_URL
+        sync: false
+      - key: CINEQO_CORS_ORIGINS
+        value: "*"
