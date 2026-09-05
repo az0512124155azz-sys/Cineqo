@@ -1,0 +1,10 @@
+gradio>=5,<7
+spaces>=0.42
+transformers>=4.57,<5
+accelerate>=1.10,<2
+imageio-ffmpeg>=0.6
+ftfy>=6.3
+numpy>=2.0
+Pillow>=10
+# Wan 2.2 TI2V requires features from the Diffusers main branch.
+diffusers @ git+https://github.com/huggingface/diffusers.git
