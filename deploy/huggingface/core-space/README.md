@@ -2,7 +2,7 @@
 title: Cineqo Core
 emoji: 🎬
 colorFrom: gray
-colorTo: black
+colorTo: blue
 sdk: gradio
 sdk_version: 5.49.1
 app_file: app.py
