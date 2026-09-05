@@ -39,6 +39,16 @@
       "notes": "Used for chat voice input, transcription and lyric timing assistance; never for music generation."
     },
     {
+      "id": "triposr",
+      "role": "digital-identity-base-mesh",
+      "upstream": "https://github.com/VAST-AI-Research/TripoSR.git",
+      "ref": "main",
+      "destination": "third_party/3d/TripoSR",
+      "license": "MIT",
+      "include_in_import": true,
+      "notes": "MIT source and pretrained model. Used as the first open baseline for 3D reconstruction; Cineqo can later replace it with a stronger permissively licensed multi-view human model without changing the API."
+    },
+    {
       "id": "qwen3-4b",
       "role": "director-lightweight",
       "upstream": "https://huggingface.co/Qwen/Qwen3-4B",
@@ -77,7 +87,11 @@
     {
       "id": "flux1-dev-family",
       "reason": "Non-commercial/custom model-license restrictions on dev-family weights; excluded from the approved set."
+    },
+    {
+      "id": "openlrm-pretrained",
+      "reason": "OpenLRM source is Apache-2.0, but its released model weights are CC BY-NC 4.0; excluded from commercial Cineqo use."
     }
   ],
-  "workflow_trigger_revision": 2
+  "workflow_trigger_revision": 3
 }
