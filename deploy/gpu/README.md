@@ -1,33 +1,79 @@
 # Cineqo GPU server deployment
 
-This server runs every open AI model used by Cineqo behind one API and one shared runtime volume.
+Cineqo is designed to run its open AI stack behind one public web gateway. The simplest first production deployment is one Ubuntu GPU VM with Docker Compose and one persistent filesystem.
 
-## Recommended server
+## Recommended first server
 
-Use a Linux NVIDIA GPU server with **48 GB VRAM** for the simplest all-in-one deployment. A 24 GB card can run Wan 2.2 TI2V-5B with offload, but running Wan, Qwen Director, MuseTalk, Whisper and TripoSR together is much more reliable on 48 GB.
+Use a **1x NVIDIA RTX A6000 48 GB** Lambda Cloud instance (or an equivalent full Ubuntu GPU VM with at least 48 GB VRAM).
 
-Recommended starting class: NVIDIA A40 / RTX A6000 / L40 / RTX 6000 Ada, Ubuntu 22.04+, 50+ GB system RAM, 150+ GB persistent disk.
+Why 48 GB: Cineqo runs a multimodal 7B Director plus Wan 2.2 TI2V-5B, MuseTalk, Whisper and TripoSR. Wan can run on a 24 GB GPU with offload, but 48 GB gives much more room for a single-node integrated deployment.
 
-## 1. Install host prerequisites
+Recommended minimums:
 
-The host needs:
+- Ubuntu LTS
+- NVIDIA GPU with 48 GB VRAM
+- 80+ GB system RAM
+- 250+ GB disk; 500 GB is preferable for model caches and generated video
+- public IPv4 address
 
-- NVIDIA driver
-- Docker Engine + Docker Compose v2
-- NVIDIA Container Toolkit
-- Git
-- Python 3 + pip
+## 1. Create the VM
 
-Verify before continuing:
+In Lambda Cloud:
+
+1. Add your SSH public key to the workspace.
+2. Launch a **1x RTX A6000 48 GB** instance.
+3. Copy the public IP from the Instances page.
+4. Connect from your computer:
+
+```bash
+ssh -i ~/.ssh/YOUR_KEY ubuntu@YOUR_SERVER_IP
+```
+
+Lambda GPU instances already include the NVIDIA software stack, but verify the GPU first:
 
 ```bash
 nvidia-smi
-docker --version
-docker compose version
+```
+
+## 2. Install Docker Engine
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl git python3 python3-venv gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+. /etc/os-release
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu ${UBUNTU_CODENAME:-$VERSION_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo usermod -aG docker "$USER"
+```
+
+Log out and SSH back in so the Docker group is active.
+
+## 3. Install and configure NVIDIA Container Toolkit
+
+```bash
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends ca-certificates curl gnupg2
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+sudo apt-get update
+sudo apt-get install -y nvidia-container-toolkit
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+```
+
+Verify that Docker can see the GPU:
+
+```bash
 docker run --rm --gpus all nvidia/cuda:12.6.3-base-ubuntu22.04 nvidia-smi
 ```
 
-## 2. Clone Cineqo
+Do not continue until this command shows the NVIDIA GPU.
+
+## 4. Clone Cineqo
 
 ```bash
 git clone https://github.com/az0512124155azz-sys/Cineqo.git
@@ -35,79 +81,127 @@ cd Cineqo
 cp .env.example .env
 ```
 
-## 3. Download model weights
+The default runtime uses only approved open components:
+
+- Qwen/Qwen2.5-VL-7B-Instruct — multimodal Director, planning and uploaded clip/reference analysis
+- OpenAI Whisper — chat microphone speech-to-text and song transcription
+- Wan 2.2 TI2V-5B — text-to-video and image-to-video
+- MuseTalk 1.5 — lip sync
+- TripoSR — base Digital Identity 3D reconstruction
+
+## 5. Download the large model assets
 
 ```bash
 chmod +x deploy/gpu/bootstrap.sh
 ./deploy/gpu/bootstrap.sh
 ```
 
-This downloads Wan 2.2 TI2V-5B and the complete MuseTalk inference bundle. Qwen3-4B, Whisper and TripoSR populate their persistent caches at first start.
+The script downloads Wan 2.2 TI2V-5B and the complete MuseTalk 1.5 bundle. Qwen2.5-VL-7B, Whisper and TripoSR populate their persistent caches automatically on first boot.
 
-## 4. Start the full stack
+## 6. Start every service
 
 ```bash
 docker compose --profile gpu up -d --build
 ```
 
-Watch first boot:
+The first build/start can take a long time because CUDA images, Python packages and model weights are large.
+
+Watch the startup:
 
 ```bash
-docker compose --profile gpu logs -f director whisper wan musetalk identity api
+docker compose --profile gpu logs -f director whisper wan musetalk identity api web
 ```
 
-Qwen, Whisper and TripoSR may download model files on the first launch.
+Press `Ctrl+C` to stop following logs; the containers keep running.
 
-## 5. Verify every model
+## 7. Verify all AI engines
+
+Only the web gateway is published to the host, on port 8080. Internal AI ports are not public.
 
 ```bash
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/api/models/status
+chmod +x deploy/gpu/verify.sh
+./deploy/gpu/verify.sh
 ```
 
-`/api/models/status` should report all five engines ready:
+Or manually:
 
-- director — Qwen3-4B through vLLM
-- whisper — speech-to-text / voice input
-- wan — Wan 2.2 TI2V-5B video generation
-- musetalk — lip sync
-- identity — TripoSR base 3D reconstruction
+```bash
+curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:8080/api/models/status
+```
 
-## 6. Network exposure
+`/api/models/status` must report every engine ready:
 
-Only expose the Cineqo web/API entry point publicly. Do **not** expose ports 8001 or 8011-8014 to the public Internet in production.
+- director — Qwen2.5-VL-7B-Instruct via vLLM
+- whisper — OpenAI Whisper
+- wan — Wan 2.2 TI2V-5B
+- musetalk — MuseTalk 1.5
+- identity — TripoSR
 
-For an all-in-one server, publish the web container on port 8080 and put HTTPS in front of it using your cloud provider proxy, Caddy or Cloudflare Tunnel.
+Do not move on to public deployment until the result says all engines are ready.
 
-The internal model services communicate on the Docker network.
+## 8. Open the app for a private server test
 
-## 7. Persistent folders
+Temporarily allow inbound TCP port **8080** in the cloud firewall and browse to:
 
-Do not delete these directories between restarts:
+```text
+http://YOUR_SERVER_IP:8080
+```
+
+Test this complete sequence before configuring a domain:
+
+1. onboarding research
+2. upload artist clips and references; wait for Qwen visual analysis
+3. upload identity photos; wait for TripoSR
+4. inspect the generated GLB in the 3D viewer
+5. use the microphone and confirm Whisper inserts text in the composer
+6. PLAN mode chat
+7. CREATE mode with a short prompt and no song
+8. CREATE mode with a song and confirm Wan completes followed by MuseTalk
+
+## 9. Public HTTPS / cloud layer
+
+For a stable public deployment, point a domain or subdomain such as `app.example.com` at the GPU VM and put HTTPS in front of port 8080. Caddy or Cloudflare Tunnel are both suitable.
+
+Only the web gateway should be Internet-facing. The Director, Whisper, Wan, MuseTalk, TripoSR and raw API containers stay on the private Docker network.
+
+Once the HTTPS hostname is final, set:
+
+```env
+CINEQO_CORS_ORIGINS=https://app.example.com
+```
+
+Then restart:
+
+```bash
+docker compose --profile gpu up -d
+```
+
+## 10. Persistence and backups
+
+Do not delete these directories:
 
 ```text
 models/
 runtime/shared/
 ```
 
-`models/` contains downloaded weights/caches. `runtime/shared/` contains uploaded media and intermediate/final generated assets.
+`models/` stores downloaded weights and caches. `runtime/shared/` stores uploads, sampled reference frames, generated 3D models, generated videos and lip-sync outputs.
 
-## 8. What CREATE mode now does
+For a real launch, back up `runtime/shared/` or migrate generated user assets to object storage before enabling account authentication.
 
-When the UI is in CREATE mode:
+## 11. What is genuinely connected now
 
-1. The Director turns the request into a cinematic generation prompt.
-2. If a song is attached, Whisper transcribes it for lyrical/timing context.
-3. Wan 2.2 generates the video. An attached image is used as image-to-video conditioning.
-4. If a song is attached, MuseTalk is automatically started after the Wan job succeeds.
-5. The browser polls job status and exposes the finished output through the API.
+- Artist web research -> Director
+- uploaded artist/reference videos -> sampled frames -> multimodal Director -> Visual DNA
+- microphone -> Whisper -> composer text
+- song -> Whisper -> Director context
+- PLAN -> Director + optional public web research
+- CREATE -> Director prompt -> Wan 2.2 -> MuseTalk when a song is attached
+- identity photos -> TripoSR -> GLB preview -> review screen
 
-PLAN mode continues to use the Director + optional DuckDuckGo public web research without starting expensive video generation.
+One limitation remains explicit: TripoSR creates the base 3D reconstruction but is **not** a text-guided arbitrary mesh editor. Cineqo currently records/routs model-chat refinement requests rather than pretending TripoSR edited geometry. A separate permissively licensed 3D refinement engine is required before that one feature can truthfully be called complete.
 
-## 9. Digital Identity
+## 12. Authentication comes after HTTPS
 
-Uploaded artist photos are sent to the TripoSR identity worker and the generated model is returned to the Cineqo review flow. The current TripoSR adapter creates the base reconstruction. Text chat refinement requests are stored/routed by the identity API, but TripoSR itself is not a text-guided mesh editor; a stronger permissively licensed refinement engine is still required before claiming arbitrary chat-based mesh editing is fully implemented.
-
-## 10. Authentication
-
-Google / Apple / email buttons intentionally remain demo-only until the public HTTPS deployment is stable. OAuth callback URLs should be configured only after the final production domain exists.
+Google / Apple / email remain intentionally disabled as real authentication until the final HTTPS domain is stable. OAuth callback URLs and session security should be configured only after the public hostname is fixed.
