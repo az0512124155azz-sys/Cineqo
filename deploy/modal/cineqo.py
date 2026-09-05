@@ -19,12 +19,13 @@ qwen_image = (
     modal.Image.debian_slim(python_version="3.12")
     .uv_pip_install(
         "torch==2.7.1",
+        "torchvision==0.22.1",
         "transformers>=4.51,<5",
         "accelerate>=1.6,<2",
         "qwen-vl-utils>=0.0.11",
         "safetensors>=0.5",
     )
-    .env({"HF_HOME": MODEL_DIR, "TRANSFORMERS_CACHE": MODEL_DIR})
+    .env({"HF_HOME": MODEL_DIR})
 )
 
 whisper_image = (
@@ -42,6 +43,7 @@ wan_image = (
     .apt_install("ffmpeg")
     .uv_pip_install(
         "torch==2.7.1",
+        "torchvision==0.22.1",
         "diffusers>=0.35,<0.36",
         "transformers>=4.51,<5",
         "accelerate>=1.6,<2",
@@ -51,7 +53,7 @@ wan_image = (
         "imageio-ffmpeg>=0.6",
         "pillow>=11",
     )
-    .env({"HF_HOME": MODEL_DIR, "TRANSFORMERS_CACHE": MODEL_DIR})
+    .env({"HF_HOME": MODEL_DIR})
 )
 
 api_image = modal.Image.debian_slim(python_version="3.12").uv_pip_install(
@@ -204,14 +206,14 @@ def web():
     @api.post("/director")
     async def director(prompt: str = Form(...), authorization: str | None = Header(None)) -> dict[str, str]:
         guard(authorization)
-        return {"text": Director().chat.remote(prompt)}
+        return {"text": await Director().chat.remote.aio(prompt)}
 
     @api.post("/transcribe")
     async def transcribe(audio: UploadFile = File(...), authorization: str | None = Header(None)) -> dict[str, Any]:
         guard(authorization)
         data = await audio.read()
         suffix = Path(audio.filename or "voice.webm").suffix or ".webm"
-        return Whisper().transcribe.remote(data, suffix)
+        return await Whisper().transcribe.remote.aio(data, suffix)
 
     @api.post("/generate")
     async def generate(
@@ -221,7 +223,7 @@ def web():
     ) -> Response:
         guard(authorization)
         image_bytes = await image.read() if image else None
-        video = Wan().generate.remote(prompt, image_bytes)
+        video = await Wan().generate.remote.aio(prompt, image_bytes)
         return Response(content=video, media_type="video/mp4", headers={"Content-Disposition": "attachment; filename=cineqo-shot.mp4"})
 
     return api
