@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cineqo</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <section id="auth" class="auth-screen">
+    <div class="auth-card">
+      <div class="brand brand-large"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span>Cineqo</span></div>
+      <h1 data-i18n="welcome">ברוכים הבאים</h1>
+      <p data-i18n="welcomeSub">התחבר כדי לשמור את פרופיל האמן, ה-Digital Identity והפרויקטים שלך.</p>
+      <button class="auth-provider light" data-provider="Google">G&nbsp;&nbsp;<span data-i18n="google">המשך עם Google</span></button>
+      <button class="auth-provider" data-provider="Apple">&nbsp;&nbsp;<span data-i18n="apple">המשך עם Apple</span></button>
+      <div class="divider" data-i18n="or">או</div>
+      <input id="email" type="email" placeholder="name@example.com">
+      <input id="password" type="password" value="demo1234">
+      <button class="auth-provider" data-provider="Email" data-i18n="emailContinue">המשך עם אימייל</button>
+      <small>Prototype: authentication providers are wired later.</small>
+    </div>
+  </section>
+
+  <section id="onboarding" class="onboarding hidden">
+    <header class="on-head">
+      <div class="brand"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span>Cineqo</span></div>
+      <span id="stepCount">1 / 7</span>
+    </header>
+    <main class="on-card">
+      <section class="step" data-step="1">
+        <h1 data-i18n="who">בוא נכיר אותך</h1>
+        <p data-i18n="whoSub">כמה פרטים בסיסיים יעזרו למחקר לזהות את האמן הנכון.</p>
+        <label data-i18n="artistName">שם אמן</label>
+        <input id="artistName" value="Avishai Nova">
+        <label data-i18n="recognition">רמת מוכרות</label>
+        <div class="choice-grid">
+          <button class="choice active" data-i18n="emerging">בתחילת הדרך</button>
+          <button class="choice" data-i18n="local">מוכר מקומית</button>
+          <button class="choice" data-i18n="known">אמן מוכר</button>
+          <button class="choice" data-i18n="global">בינלאומי</button>
+        </div>
+      </section>
+
+      <section class="step hidden" data-step="2">
+        <h1 data-i18n="locale">שפה ומדינה</h1>
+        <p data-i18n="localeSub">השפה משנה מיד את הממשק והמדינה משפרת את המחקר המקומי.</p>
+        <div class="two-col">
+          <div><label data-i18n="language">שפה</label><select id="language"></select></div>
+          <div><label data-i18n="country">מדינה</label><select id="country"></select></div>
+        </div>
+      </section>
+
+      <section class="step hidden" data-step="3">
+        <h1 data-i18n="research">מכירים את העולם שלך</h1>
+        <p data-i18n="researchSub">המחקר מתחיל אוטומטית ומשתמש במידע ציבורי בלבד.</p>
+        <div class="research-box">
+          <div class="research-head"><b>Artist Research</b><span id="researchDot"></span></div>
+          <div class="research-line" data-i18n="r1">מאמת את שם האמן</div>
+          <div class="research-line" data-i18n="r2">מאתר מקורות ציבוריים ופרופילים רלוונטיים</div>
+          <div class="research-line" data-i18n="r3">מזהה קליפים, הופעות ושפה חזותית</div>
+          <div class="research-line" data-i18n="r4">בונה Artist Profile עם רמת ביטחון</div>
+        </div>
+      </section>
+
+      <section class="step hidden" data-step="4">
+        <h1 data-i18n="taste">מה נראה לך נכון?</h1>
+        <p data-i18n="tasteSub">עד 10 קליפים שלך ועד 10 רפרנסים בנפרד.</p>
+        <div class="upload-grid">
+          <article class="upload-card"><header><div><h3 data-i18n="yourClips">הקליפים שלך</h3><small data-i18n="yourClipsSub">עבודות שמייצגות אותך היום</small></div><b id="mineCount">0 / 10</b></header><button data-add-clip="mine" data-i18n="addClip">+ הוסף קליפ</button><div id="mineFiles" class="file-list"></div></article>
+          <article class="upload-card"><header><div><h3 data-i18n="refs">רפרנסים</h3><small data-i18n="refsSub">קליפים של אחרים שאתה אוהב</small></div><b id="refCount">0 / 10</b></header><button data-add-clip="ref" data-i18n="addRef">+ הוסף רפרנס</button><div id="refFiles" class="file-list"></div></article>
+        </div>
+      </section>
+
+      <section class="step hidden" data-step="5">
+        <h1 data-i18n="identity">בנה את ה-Digital Identity שלך</h1>
+        <p data-i18n="identitySub">העלה תמונות ברורות מכמה זוויות. שום מודל לא נבנה לפני שתאשר שסיימת.</p>
+        <div class="identity-upload"><h3>Face + body capture</h3><p data-i18n="identityHint">קדימה • צד ימין • צד שמאל • גוף מלא • גב</p><button id="addPhoto" data-i18n="addPhotos">הוסף תמונות</button><div id="photoList" class="photo-list"></div></div>
+        <div class="finish-card"><div><b data-i18n="finishedPhotos">סיימת להעלות?</b><p data-i18n="finishedPhotosSub">אם חסר משהו, Cineqo יבקש עוד תמונה לפני יצירת המודל.</p></div><button id="photosDone" class="primary" data-i18n="photosDone">העליתי את כל התמונות</button></div>
+        <div id="identityMessage" class="agent-message hidden"></div>
+      </section>
+
+      <section class="step hidden" data-step="6">
+        <h1 data-i18n="reviewModel">בדוק את המודל שלך</h1>
+        <p data-i18n="reviewModelSub">דבר עם Cineqo ובקש תיקונים עד שהמודל מושלם.</p>
+        <div class="model-grid">
+          <div class="model-view"><div id="avatar3d" class="avatar3d"><span class="head"></span><span class="body"></span><span class="leg a"></span><span class="leg b"></span></div><div class="model-controls"><button id="rotateLeft">↶</button><button id="resetModel">Reset</button><button id="rotateRight">↷</button></div></div>
+          <div class="model-chat"><header><b>Cineqo Model Chat</b><small data-i18n="modelChatSub">בקש תיקונים למראה לפני האישור הסופי</small></header><div id="modelLog" class="model-log"><div class="model-msg ai" data-i18n="modelHello">זה המודל הראשוני. תגיד לי מה לא מדויק.</div></div><div class="model-compose"><textarea id="modelPrompt" data-i18n-placeholder="modelPlaceholder" placeholder="מה תרצה לשנות?"></textarea><button id="sendModel">↑</button></div></div>
+        </div>
+        <div class="finish-card"><span id="modelStatus" data-i18n="notApproved">המודל עדיין לא אושר.</span><button id="approveModel" class="primary" data-i18n="approveModel">המודל מושלם — המשך</button></div>
+      </section>
+
+      <section class="step hidden" data-step="7">
+        <h1 data-i18n="legal">לפני שמתחילים</h1>
+        <p data-i18n="legalSub">יש לקרוא ולאשר את המסמכים המחייבים.</p>
+        <div id="legalRows"></div>
+      </section>
+    </main>
+    <footer class="on-actions"><button id="back" data-i18n="back">חזרה</button><button id="next" class="primary" data-i18n="next">המשך</button></footer>
+  </section>
+
+  <div id="app" class="app-shell">
+    <aside class="sidebar">
+      <div class="brand-side"><div class="brand"><span class="brand-mark"><i></i><i></i><i></i><i></i></span><span>Cineqo</span></div><div>MUSIC<br>VIDEO<br>DIRECTION</div></div>
+      <nav><button class="active" id="newChat">◯ <span>New chat</span></button><button>▥ <span>Library</span></button><button>◇ <span>Inspiration</span></button><button>⌁ <span>Tools</span></button></nav>
+      <div class="side-bottom"><button>? <span>Help</span></button><button id="openLegal">≡ <span>Legal</span></button><div class="tagline">TURN<br>SOUND<br>INTO<br>WORLDS</div><div class="account-wrap"><button id="accountButton" class="account-button"><span id="accountAvatar">A</span><span id="accountName">Artist</span></button><div id="accountMenu" class="account-menu hidden"><button data-i18n="profile">פרופיל</button><button id="settingsButton" data-i18n="settings">הגדרות</button><hr><button data-i18n="logout">התנתק</button></div></div></div>
+    </aside>
+    <main class="workspace"><header class="workspace-head"><b id="projectTitle">Untitled</b></header><section id="chat" class="chat"><div id="hero" class="hero"><div>A CREATIVE WORKSPACE</div><h1>Your song<br>already exists.<br>Now give it a <em>world.</em></h1><p>Turn your music into cinematic stories.</p><div class="hero-actions"><button data-prompt="Create a music video">＋ Create a music video</button><button data-prompt="Build my artist model">▧ Build your artist model</button><button data-prompt="Give me ideas">◇ Get inspired</button></div></div></section><div class="composer-wrap"><div class="composer"><div id="attachments" class="attachments"></div><div id="voiceState" class="voice-state hidden"><span></span><b>Listening…</b></div><div class="compose-line"><button id="attachButton" class="circle">＋</button><textarea id="prompt" placeholder="כתוב ל-Cineqo..."></textarea><button id="micButton" class="circle mic" aria-label="Microphone"><svg viewBox="0 0 24 24"><path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V6a3.5 3.5 0 1 0-7 0v5a3.5 3.5 0 0 0 3.5 3.5Z M5.5 10.5V11a6.5 6.5 0 0 0 13 0v-.5 M12 17.5V21 M9.5 21h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button id="sendButton" class="circle send">↑</button></div><div class="composer-tools"><button id="modeButton">✦ PLAN ⌄</button><button id="webButton">⌕ Web</button></div><div id="attachMenu" class="popup hidden"><button data-file="song.wav">🎵 Song</button><button data-file="reference.mp4">🎬 Video</button><button data-file="image.jpg">▧ Image</button><button data-file="lyrics.pdf">▤ Document</button></div><div id="modeMenu" class="popup mode-menu hidden"><button data-mode="PLAN"><b>PLAN</b><small>Plan before creating</small></button><button data-mode="CREATE"><b>CREATE</b><small>Go straight to execution</small></button></div></div></div></main>
+  </div>
+
+  <div id="modal" class="modal-backdrop hidden"><div class="modal"><header><b id="modalTitle"></b><button id="modalClose">×</button></header><div id="modalBody"></div></div></div>
+  <div id="toast" class="toast hidden"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
