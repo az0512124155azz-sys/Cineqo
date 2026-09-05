@@ -4,4 +4,4 @@ httpx>=0.28,<1
 python-multipart>=0.0.20,<1
 pydantic-settings>=2.10,<3
 ddgs>=9,<10
-gradio_client>=1.13,<2
+gradio_client>=2,<3
