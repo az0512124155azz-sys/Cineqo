@@ -7,19 +7,15 @@ services:
     healthCheckPath: /health
     autoDeploy: true
     envVars:
-      - key: CINEQO_DIRECTOR_BASE_URL
+      - key: CINEQO_HF_CORE_SPACE
         sync: false
-      - key: CINEQO_DIRECTOR_MODEL
-        value: Qwen/Qwen3-4B
-      - key: CINEQO_DIRECTOR_API_KEY
-        value: local-open-model
-      - key: CINEQO_WHISPER_URL
+      - key: CINEQO_HF_VIDEO_SPACE
         sync: false
-      - key: CINEQO_WAN_URL
-        sync: false
-      - key: CINEQO_MUSETALK_URL
-        sync: false
-      - key: CINEQO_IDENTITY_URL
+      - key: CINEQO_HF_TOKEN
         sync: false
       - key: CINEQO_CORS_ORIGINS
         value: "*"
+      - key: CINEQO_WEB_RESULTS
+        value: "8"
+      - key: CINEQO_TMP_ROOT
+        value: /tmp/cineqo
