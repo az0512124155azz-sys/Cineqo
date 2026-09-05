@@ -1,0 +1,6 @@
+gradio>=5,<7
+spaces>=0.42
+transformers>=4.57,<5
+accelerate>=1.10,<2
+qwen-vl-utils>=0.0.14
+openai-whisper @ git+https://github.com/openai/whisper.git
