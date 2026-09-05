@@ -19,7 +19,7 @@ services:
       CINEQO_WHISPER_URL: ${CINEQO_WHISPER_URL:-http://whisper:8011}
       CINEQO_WAN_URL: ${CINEQO_WAN_URL:-http://wan:8012}
       CINEQO_MUSETALK_URL: ${CINEQO_MUSETALK_URL:-http://musetalk:8013}
-      CINEQO_IDENTITY_URL: ${CINEQO_IDENTITY_URL:-}
+      CINEQO_IDENTITY_URL: ${CINEQO_IDENTITY_URL:-http://identity:8014}
       CINEQO_CORS_ORIGINS: ${CINEQO_CORS_ORIGINS:-*}
     ports:
       - "8000:8000"
@@ -95,6 +95,27 @@ services:
       - ./runtime/shared:/shared
     ports:
       - "8013:8013"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  identity:
+    build:
+      context: .
+      dockerfile: services/workers/identity/Dockerfile
+    profiles: ["gpu"]
+    environment:
+      TRIPOSR_ROOT: /opt/triposr
+      TRIPOSR_OUTPUT_DIR: /outputs
+    volumes:
+      - ./models/triposr-cache:/root/.cache/huggingface
+      - ./runtime/identity:/outputs
+    ports:
+      - "8014:8014"
     deploy:
       resources:
         reservations:
