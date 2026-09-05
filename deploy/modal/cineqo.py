@@ -130,7 +130,7 @@ class Whisper:
     timeout=3600,
     scaledown_window=60,
     volumes={MODEL_DIR: MODEL_VOLUME},
-    ephemeral_disk=65536,
+    ephemeral_disk=524288,
 )
 class Wan:
     @modal.enter()
