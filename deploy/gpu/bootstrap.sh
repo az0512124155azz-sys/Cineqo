@@ -17,28 +17,28 @@ mkdir -p \
   models/triposr-cache \
   runtime/shared
 
-python3 -m pip install --upgrade "huggingface_hub[cli]" gdown
-
-if command -v hf >/dev/null 2>&1; then
-  HFCLI=hf
-else
-  HFCLI=huggingface-cli
+BOOTSTRAP_VENV="$ROOT/.bootstrap-venv"
+if [ ! -x "$BOOTSTRAP_VENV/bin/python" ]; then
+  python3 -m venv "$BOOTSTRAP_VENV"
 fi
+"$BOOTSTRAP_VENV/bin/python" -m pip install --upgrade pip "huggingface_hub[cli]" gdown
+HFCLI="$BOOTSTRAP_VENV/bin/hf"
+GDOWN="$BOOTSTRAP_VENV/bin/gdown"
 
 # Wan 2.2 TI2V-5B: text-to-video + image-to-video.
-$HFCLI download Wan-AI/Wan2.2-TI2V-5B --local-dir models/wan/Wan2.2-TI2V-5B
+"$HFCLI" download Wan-AI/Wan2.2-TI2V-5B --local-dir models/wan/Wan2.2-TI2V-5B
 
-# MuseTalk 1.5 and its required inference components.
-$HFCLI download TMElyralab/MuseTalk --local-dir models/musetalk --include "musetalkV15/musetalk.json" "musetalkV15/unet.pth"
-$HFCLI download stabilityai/sd-vae-ft-mse --local-dir models/musetalk/sd-vae --include "config.json" "diffusion_pytorch_model.bin"
-$HFCLI download openai/whisper-tiny --local-dir models/musetalk/whisper --include "config.json" "pytorch_model.bin" "preprocessor_config.json"
-$HFCLI download yzd-v/DWPose --local-dir models/musetalk/dwpose --include "dw-ll_ucoco_384.pth"
-$HFCLI download ByteDance/LatentSync --local-dir models/musetalk/syncnet --include "latentsync_syncnet.pt"
-gdown --id 154JgKpzCPW82qINcVieuPH3fZ2e0P812 -O models/musetalk/face-parse-bisent/79999_iter.pth
+# MuseTalk 1.5 and its complete inference bundle.
+"$HFCLI" download TMElyralab/MuseTalk --local-dir models/musetalk --include "musetalkV15/musetalk.json" "musetalkV15/unet.pth"
+"$HFCLI" download stabilityai/sd-vae-ft-mse --local-dir models/musetalk/sd-vae --include "config.json" "diffusion_pytorch_model.bin"
+"$HFCLI" download openai/whisper-tiny --local-dir models/musetalk/whisper --include "config.json" "pytorch_model.bin" "preprocessor_config.json"
+"$HFCLI" download yzd-v/DWPose --local-dir models/musetalk/dwpose --include "dw-ll_ucoco_384.pth"
+"$HFCLI" download ByteDance/LatentSync --local-dir models/musetalk/syncnet --include "latentsync_syncnet.pt"
+"$GDOWN" --id 154JgKpzCPW82qINcVieuPH3fZ2e0P812 -O models/musetalk/face-parse-bisent/79999_iter.pth
 curl -fL https://download.pytorch.org/models/resnet18-5c106cde.pth -o models/musetalk/face-parse-bisent/resnet18-5c106cde.pth
 
-# Qwen3, OpenAI Whisper and TripoSR model files are downloaded by their
-# respective runtimes into the persistent model-cache directories on first boot.
+# Qwen2.5-VL-7B, OpenAI Whisper and TripoSR download into persistent caches
+# on first service boot, so they are not duplicated here.
 
 echo "Cineqo model assets are ready."
 echo "Start everything with: docker compose --profile gpu up -d --build"
