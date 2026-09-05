@@ -1,0 +1,39 @@
+name: Import vetted open-source sources
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Cineqo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install import dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq rsync
+
+      - name: Import approved source trees
+        run: bash scripts/import-open-source.sh
+
+      - name: Show imported revisions
+        run: cat open_source/LOCK.json
+
+      - name: Commit imported sources
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add third_party open_source/LOCK.json
+          if git diff --cached --quiet; then
+            echo "No upstream source changes detected."
+            exit 0
+          fi
+          git commit -m "Import vetted open-source sources"
+          git push origin HEAD:main
