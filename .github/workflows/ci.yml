@@ -1,0 +1,45 @@
+name: Cineqo CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/**"
+      - "services/**"
+      - "deploy/**"
+      - "docker-compose.yml"
+      - "render.yaml"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile Python services
+        run: python -m compileall -q services
+
+      - name: Validate required web files
+        run: |
+          test -s apps/web/index.html
+          test -s apps/web/styles.css
+          test -s apps/web/app.js
+
+      - name: Install API dependencies
+        run: pip install -r services/api/requirements.txt
+
+      - name: Import API application
+        env:
+          CINEQO_DIRECTOR_BASE_URL: http://127.0.0.1:9999/v1
+        run: python -c "import sys; sys.path.insert(0, 'services/api'); from app.main import app; print(app.title)"
+
+      - name: Validate Docker Compose syntax
+        run: docker compose config --quiet
