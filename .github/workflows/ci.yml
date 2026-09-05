@@ -32,6 +32,7 @@ jobs:
           test -s apps/web/index.html
           test -s apps/web/styles.css
           test -s apps/web/app.js
+          test -s apps/web/models.js
 
       - name: Install API dependencies
         run: pip install -r services/api/requirements.txt
@@ -39,7 +40,8 @@ jobs:
       - name: Import API application
         env:
           CINEQO_DIRECTOR_BASE_URL: http://127.0.0.1:9999/v1
+          CINEQO_SHARED_ROOT: /tmp/cineqo-shared
         run: python -c "import sys; sys.path.insert(0, 'services/api'); from app.main import app; print(app.title)"
 
       - name: Validate Docker Compose syntax
-        run: docker compose config --quiet
+        run: docker compose --profile gpu config --quiet
