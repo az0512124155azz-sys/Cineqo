@@ -16,7 +16,7 @@
       "destination": "third_party/video/Wan2.2",
       "license": "Apache-2.0",
       "include_in_import": true,
-      "notes": "Source code only. Model weights stay external. Ref will be pinned to an immutable commit by the import workflow before product integration."
+      "notes": "Source code only. Model weights stay external. Ref is pinned to an immutable commit by the import workflow."
     },
     {
       "id": "musetalk",
@@ -26,7 +26,7 @@
       "destination": "third_party/lipsync/MuseTalk",
       "license": "MIT",
       "include_in_import": true,
-      "notes": "Source import only. Any model checkpoints remain external and must retain upstream notices."
+      "notes": "Source import only. Checkpoints stay external and retain upstream notices."
     },
     {
       "id": "whisper",
@@ -36,17 +36,37 @@
       "destination": "third_party/audio/whisper",
       "license": "MIT",
       "include_in_import": true,
-      "notes": "Used for transcription/lyrics timing assistance, not music generation."
+      "notes": "Used for chat voice input, transcription and lyric timing assistance; never for music generation."
+    },
+    {
+      "id": "qwen3-4b",
+      "role": "director-lightweight",
+      "upstream": "https://huggingface.co/Qwen/Qwen3-4B",
+      "ref": "main",
+      "destination": null,
+      "license": "Apache-2.0",
+      "include_in_import": false,
+      "notes": "Default lighter self-hosted Director profile. Weights stay external."
     },
     {
       "id": "mistral-small-4",
-      "role": "director-research-planning",
+      "role": "director-high-quality",
       "upstream": "https://huggingface.co/mistralai/Mistral-Small-4-119B-2603",
       "ref": "main",
       "destination": null,
       "license": "Apache-2.0",
       "include_in_import": false,
-      "notes": "Open model candidate. Do not vendor weights into GitHub. Runtime integration comes later."
+      "notes": "High-quality Director/research/planning profile. Weights stay external because the checkpoint is very large."
+    },
+    {
+      "id": "vllm",
+      "role": "open-model-serving",
+      "upstream": "https://github.com/vllm-project/vllm.git",
+      "ref": "main",
+      "destination": null,
+      "license": "Apache-2.0",
+      "include_in_import": false,
+      "notes": "OpenAI-compatible self-hosted inference server for the Director model. Pulled as a container/runtime dependency rather than vendored."
     }
   ],
   "excluded": [
@@ -59,5 +79,5 @@
       "reason": "Non-commercial/custom model-license restrictions on dev-family weights; excluded from the approved set."
     }
   ],
-  "workflow_trigger_revision": 1
+  "workflow_trigger_revision": 2
 }
