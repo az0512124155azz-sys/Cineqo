@@ -37,11 +37,11 @@ jobs:
       - name: Install API dependencies
         run: pip install -r services/api/requirements.txt
 
-      - name: Import API application
+      - name: Import combined API application
         env:
           CINEQO_DIRECTOR_BASE_URL: http://127.0.0.1:9999/v1
           CINEQO_SHARED_ROOT: /tmp/cineqo-shared
-        run: python -c "import sys; sys.path.insert(0, 'services/api'); from app.main import app; print(app.title)"
+        run: python -c "import sys; sys.path.insert(0, 'services/api'); from app.combined import app; print(app.title)"
 
       - name: Validate Docker Compose syntax
         run: docker compose --profile gpu config --quiet
