@@ -5,7 +5,7 @@ WORKDIR /opt/wan
 COPY third_party/video/Wan2.2 /opt/wan
 RUN pip3 install --no-cache-dir -r requirements.txt && pip3 install --no-cache-dir fastapi uvicorn[standard]
 COPY services/workers/wan/app.py /opt/cineqo/app.py
-ENV WAN_ROOT=/opt/wan WAN_CKPT_DIR=/models/Wan2.2-T2V-A14B WAN_TASK=t2v-A14B WAN_OUTPUT_DIR=/outputs
+ENV WAN_ROOT=/opt/wan WAN_CKPT_DIR=/models/Wan2.2-TI2V-5B WAN_TASK=ti2v-5B WAN_OUTPUT_DIR=/shared/wan
 EXPOSE 8012
 WORKDIR /opt/cineqo
 CMD ["python3","-m","uvicorn","app:app","--host","0.0.0.0","--port","8012"]
