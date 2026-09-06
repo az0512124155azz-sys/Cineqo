@@ -51,6 +51,7 @@ wan_image = (
         "imageio>=2.37",
         "imageio-ffmpeg>=0.6",
         "pillow>=11",
+        "ftfy>=6.3,<7",
     )
     .env({"HF_HOME": MODEL_DIR})
 )
