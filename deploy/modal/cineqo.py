@@ -9,7 +9,9 @@ import modal
 
 APP_NAME = "cineqo-gpu"
 MODEL_VOLUME = modal.Volume.from_name("cineqo-models", create_if_missing=True)
+WHISPER_VOLUME = modal.Volume.from_name("cineqo-whisper-models", create_if_missing=True)
 MODEL_DIR = "/models"
+WHISPER_MODEL_DIR = "/whisper-models"
 
 app = modal.App(APP_NAME)
 
@@ -33,7 +35,6 @@ whisper_image = (
         "torch==2.7.1",
         "openai-whisper>=20250625",
     )
-    .env({"XDG_CACHE_HOME": MODEL_DIR})
 )
 
 wan_image = (
@@ -102,15 +103,15 @@ class Director:
     gpu="T4",
     timeout=900,
     scaledown_window=30,
-    volumes={MODEL_DIR: MODEL_VOLUME},
+    volumes={WHISPER_MODEL_DIR: WHISPER_VOLUME},
 )
 class Whisper:
     @modal.enter()
     def load(self) -> None:
         import whisper
 
-        self.model = whisper.load_model("small", download_root=f"{MODEL_DIR}/whisper", device="cuda")
-        MODEL_VOLUME.commit()
+        self.model = whisper.load_model("small", download_root=WHISPER_MODEL_DIR, device="cuda")
+        WHISPER_VOLUME.commit()
 
     @modal.method()
     def transcribe(self, audio_bytes: bytes, suffix: str = ".webm") -> dict[str, Any]:
